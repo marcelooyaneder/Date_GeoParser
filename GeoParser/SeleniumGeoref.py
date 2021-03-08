@@ -577,12 +577,12 @@ class SeleniumGeoref:
     
     
 
-    def __init__(self,CoordSystem,verbatimLatitude,verbatimLongitude,dynamicProperties,geodeticDatum):
+    def __init__(self,CoordSystem,verbatimLatitude,verbatimLongitude,dynamicProperties,verbatimSRS):
         self.CoordSystem=CoordSystem    
         self.verbatimLatitude=verbatimLatitude
         self.verbatimLongitude=verbatimLongitude
         self.dynamicProperties=dynamicProperties
-        self.geodeticDatum=geodeticDatum
+        self.verbatimSRS=verbatimSRS
         
     
     def dynamicpropertiesreader(self):
@@ -597,18 +597,21 @@ class SeleniumGeoref:
         SeleniumGeoref.textFieldMeasurementError.send_keys(properties["textFieldMeasurementError"])
         ChoiceDistUnitsIndex=SeleniumGeoref.DistUnits[properties["ChoiceDistUnits"]]
         Select(SeleniumGeoref.ChoiceDistUnits).select_by_index(ChoiceDistUnitsIndex)
-        ChoiceCoordSourceIndex=SeleniumGeoref.COORDINATE_SOURCE[properties["ChoiceCoordSource"]]
-        Select(SeleniumGeoref.ChoiceCoordSource).select_by_index(ChoiceCoordSourceIndex)
+        if properties["ChoiceCoordSource"] in SeleniumGeoref.COORDINATE_SOURCE:
+            ChoiceCoordSourceIndex=SeleniumGeoref.COORDINATE_SOURCE[properties["ChoiceCoordSource"]]
+            Select(SeleniumGeoref.ChoiceCoordSource).select_by_index(ChoiceCoordSourceIndex)
+        else: 
+            Select(SeleniumGeoref.ChoiceCoordSource).select_by_index(4)
         if "TextFieldExtent" in self.dynamicProperties:
             SeleniumGeoref.TextFieldExtent.clear()
             SeleniumGeoref.TextFieldExtent.send_keys(properties["TextFieldExtent"])
         
             
     def verbatimSRSreader(self):
-        if self.geodeticDatum in SeleniumGeoref.DATUMS_LIST:
-            geodeticDatumIndex=SeleniumGeoref.DATUMS_LIST.index(self.geodeticDatum)
-            Select(SeleniumGeoref.ChoiceDatum).select_by_index(geodeticDatumIndex+1)
-        elif self.geodeticDatum == "unknown":
+        if self.verbatimSRS in SeleniumGeoref.DATUMS_LIST:
+            verbatimSRSIndex=SeleniumGeoref.DATUMS_LIST.index(self.verbatimSRS)
+            Select(SeleniumGeoref.ChoiceDatum).select_by_index(verbatimSRSIndex+1)
+        elif self.verbatimSRS == "unknown":
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(0)
         else: 
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(0)
