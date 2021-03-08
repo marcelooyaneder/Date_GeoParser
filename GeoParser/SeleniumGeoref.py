@@ -11,24 +11,24 @@ driver.get("https://georeferencing.org/georefcalculator/gci3/source/gci3.html")
 class SeleniumGeoref:
 
     #Controlled vocabulary     
-    CoordSystem_dic={   
+    COORD_SYSTEM_DIC={   
         "decimal degrees": 0,
         "degrees minutes seconds": 2,
         "degrees decimal minutes": 1
     }
-    Precision_dd={
+    PRECISION_DD={
         0.1:1, #0.1
         0.01:2, #0.01
         0.001:3, #0.001
         0.0001:4, #0.0001
         0.00001:5, #0.00001
     }
-    Precision_ddm={
+    PRECISION_DDM={
         0.1:5, #0.1
         0.01:6, #0.01
         0.001:7, #0.001
     }
-    Precision_dms={
+    PRECISION_DMS={
         0.1:9, #0.1
         0.01:10, #0.01
     }
@@ -40,7 +40,7 @@ class SeleniumGeoref:
         "ft":4,
         "nm":5,
     }
-    coordinateSource={
+    COORDINATE_SOURCE={
         "gazetteer":0,
         "Google Earth/Maps <=2008":1,
         "Google Earth/Maps >2008":2,
@@ -83,7 +83,7 @@ class SeleniumGeoref:
         "other map: 1:20000":39,
         "other map: 1:10000":40,
     }
-    datumsList=["(WGS84) World Geodetic System 1984" ,
+    DATUMS_LIST=["(WGS84) World Geodetic System 1984" ,
     "Abidjan 1987" ,
     "Accra" ,
     "Aden 1925" ,
@@ -536,9 +536,9 @@ class SeleniumGeoref:
     "Zanderij"]
     
     #Constant
-    deg_pattern="(.*?)\°"
-    min_pattern="\°(.*?)\'"
-    sec_pattern="\'(.*?)\""
+    DEG_PATTERN=r"(.*?)\°"
+    MIN_PATTERN=r"\°(.*?)\'"
+    SEC_PATTER=r"\'(.*?)\""
     
     #driver elements
     ButtonCalculate=driver.find_element_by_id("ButtonCalculate")
@@ -597,7 +597,7 @@ class SeleniumGeoref:
         SeleniumGeoref.textFieldMeasurementError.send_keys(properties["textFieldMeasurementError"])
         ChoiceDistUnitsIndex=SeleniumGeoref.DistUnits[properties["ChoiceDistUnits"]]
         Select(SeleniumGeoref.ChoiceDistUnits).select_by_index(ChoiceDistUnitsIndex)
-        ChoiceCoordSourceIndex=SeleniumGeoref.coordinateSource[properties["ChoiceCoordSource"]]
+        ChoiceCoordSourceIndex=SeleniumGeoref.COORDINATE_SOURCE[properties["ChoiceCoordSource"]]
         Select(SeleniumGeoref.ChoiceCoordSource).select_by_index(ChoiceCoordSourceIndex)
         if "TextFieldExtent" in self.dynamicProperties:
             SeleniumGeoref.TextFieldExtent.clear()
@@ -605,8 +605,8 @@ class SeleniumGeoref:
         
             
     def verbatimSRSreader(self):
-        if self.geodeticDatum in SeleniumGeoref.datumsList:
-            geodeticDatumIndex=SeleniumGeoref.datumsList.index(self.geodeticDatum)
+        if self.geodeticDatum in SeleniumGeoref.DATUMS_LIST:
+            geodeticDatumIndex=SeleniumGeoref.DATUMS_LIST.index(self.geodeticDatum)
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(geodeticDatumIndex+1)
         elif self.geodeticDatum == "unknown":
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(0)
@@ -621,15 +621,15 @@ class SeleniumGeoref:
                 Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(7)
             elif abs(float("0."+str(self.verbatimLatitude).split(".")[1]))==0.5: #1/2 degree
                 Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(6)
-            elif pow(10,-len(str(self.verbatimLatitude).split(".")[1])) in SeleniumGeoref.Precision_dd:
-                Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.Precision_dd[pow(10,-len(self.verbatimLatitude.split(".")[1]))])
+            elif pow(10,-len(str(self.verbatimLatitude).split(".")[1])) in SeleniumGeoref.PRECISION_DD:
+                Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DD[pow(10,-len(self.verbatimLatitude.split(".")[1]))])
             else:
                 Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(8) #0.0000001 or more
         if self.CoordSystem == "degrees decimal minutes":
             try:
-                minute=re.search(SeleniumGeoref.min_pattern, self.verbatimLatitude).group(1).replace(" ","")
+                minute=re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLatitude).group(1).replace(" ","")
                 if float(minute)==0: 
-                    degree=re.search(SeleniumGeoref.deg_pattern, self.verbatimLatitude).group(1).replace(" ","")
+                    degree=re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLatitude).group(1).replace(" ","")
                     if isinstance(literal_eval(degree), int): Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
                     elif abs(float("0."+degree.split(".")[1]))==0.5: 
                         Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(1)#nearest 30 minutes
@@ -640,11 +640,11 @@ class SeleniumGeoref:
                     else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
                 elif isinstance(literal_eval(minute), int): #nearest minute
                     Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(4) 
-                elif pow(10,-len(minute.split(".")[1])) in SeleniumGeoref.Precision_ddm:
-                    Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.Precision_ddm[pow(10,-len(minute.split(".")[1]))])
+                elif pow(10,-len(minute.split(".")[1])) in SeleniumGeoref.PRECISION_DDM:
+                    Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DDM[pow(10,-len(minute.split(".")[1]))])
                 else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(8)
             except:
-                degree=re.search(SeleniumGeoref.deg_pattern, self.verbatimLatitude).group(1).replace(" ","")
+                degree=re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLatitude).group(1).replace(" ","")
                 if isinstance(literal_eval(degree), int): Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
                 elif abs(float("0."+degree.split(".")[1]))==0.5: 
                     Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(1)#nearest 30 minutes
@@ -655,9 +655,9 @@ class SeleniumGeoref:
                 else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
         if self.CoordSystem=="degrees minutes seconds":
             try:
-                seconds=re.search(SeleniumGeoref.sec_pattern, self.verbatimLatitude).group(1).replace(" ","")
-                minute=re.search(SeleniumGeoref.min_pattern, self.verbatimLatitude).group(1).replace(" ","")
-                degree=re.search(SeleniumGeoref.deg_pattern, self.verbatimLatitude).group(1).replace(" ","")
+                seconds=re.search(SeleniumGeoref.SEC_PATTER, self.verbatimLatitude).group(1).replace(" ","")
+                minute=re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLatitude).group(1).replace(" ","")
+                degree=re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLatitude).group(1).replace(" ","")
                 if float(seconds)==0:
                     if isinstance(literal_eval(minute), int): 
                         Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(4) #nearest minute
@@ -679,8 +679,8 @@ class SeleniumGeoref:
                         Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(3)#nearest 5 minutes
                     else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
                 elif float(seconds)!=0 and len(seconds.split(".")[1])>=1:
-                    if len(seconds.split(".")[1])<=2 and pow(10,-len(seconds.split(".")[1])) in SeleniumGeoref.Precision_ddm:
-                        Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.Precision_dms[pow(10,-len(seconds.split(".")[1]))])
+                    if len(seconds.split(".")[1])<=2 and pow(10,-len(seconds.split(".")[1])) in SeleniumGeoref.PRECISION_DDM:
+                        Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DMS[pow(10,-len(seconds.split(".")[1]))])
                     else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(11) #exact
                 elif isinstance(literal_eval(minute), int): #nearest minute
                     Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(4) 
@@ -690,7 +690,7 @@ class SeleniumGeoref:
     def coordinatesonly(self):
         Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
         if self.CoordSystem == "decimal degrees":
-            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.CoordSystem_dic[self.CoordSystem])
+            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
             #clear fields
             SeleniumGeoref.txtT2Dec_Lat.clear()
             SeleniumGeoref.txtT2Dec_Long.clear()
@@ -707,7 +707,7 @@ class SeleniumGeoref:
             SeleniumGeoref.getresults(self)
             
         elif self.CoordSystem == "degrees minutes seconds":
-            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.CoordSystem_dic[self.CoordSystem])
+            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
             #clear fields
             SeleniumGeoref.txtT7Lat_DegDMS.clear()
             SeleniumGeoref.txtT7Lat_MinDMS.clear()
@@ -716,12 +716,12 @@ class SeleniumGeoref:
             SeleniumGeoref.txtT7Long_MinDMS.clear()
             SeleniumGeoref.txtT7Long_Sec.clear()
             #send keys to fields
-            SeleniumGeoref.txtT7Lat_DegDMS.send_keys(re.search(SeleniumGeoref.deg_pattern, self.verbatimLatitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Lat_MinDMS.send_keys(re.search(SeleniumGeoref.min_pattern, self.verbatimLatitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Lat_Sec.send_keys(re.search(SeleniumGeoref.sec_pattern, self.verbatimLatitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Long_DegDMS.send_keys(re.search(SeleniumGeoref.deg_pattern, self.verbatimLongitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Long_MinDMS.send_keys(re.search(SeleniumGeoref.min_pattern, self.verbatimLongitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Long_Sec.send_keys(re.search(SeleniumGeoref.sec_pattern, self.verbatimLongitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Lat_DegDMS.send_keys(re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLatitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Lat_MinDMS.send_keys(re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLatitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Lat_Sec.send_keys(re.search(SeleniumGeoref.SEC_PATTER, self.verbatimLatitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Long_DegDMS.send_keys(re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLongitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Long_MinDMS.send_keys(re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLongitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Long_Sec.send_keys(re.search(SeleniumGeoref.SEC_PATTER, self.verbatimLongitude).group(1).replace(" ",""))
             #select index
             if "N" in self.verbatimLatitude.upper():
                 Select(SeleniumGeoref.ChoiceLatDirDMS).select_by_index(0)
@@ -739,17 +739,17 @@ class SeleniumGeoref:
             SeleniumGeoref.getresults(self)
             
         elif self.CoordSystem == "degrees decimal minutes":
-            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.CoordSystem_dic[self.CoordSystem])
+            Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
             #clear fields
             SeleniumGeoref.txtT7Lat_DegMM.clear()
             SeleniumGeoref.txtT7Lat_MinMM.clear()
             SeleniumGeoref.txtT7Long_DegMM.clear()
             SeleniumGeoref.txtT7Long_MinMM.clear()
             #send keys to fields
-            SeleniumGeoref.txtT7Lat_DegMM.send_keys(re.search(SeleniumGeoref.deg_pattern, self.verbatimLatitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Lat_MinMM.send_keys(re.search(SeleniumGeoref.min_pattern, self.verbatimLatitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Long_DegMM.send_keys(re.search(SeleniumGeoref.deg_pattern, self.verbatimLongitude).group(1).replace(" ",""))
-            SeleniumGeoref.txtT7Long_MinMM.send_keys(re.search(SeleniumGeoref.min_pattern, self.verbatimLongitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Lat_DegMM.send_keys(re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLatitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Lat_MinMM.send_keys(re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLatitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Long_DegMM.send_keys(re.search(SeleniumGeoref.DEG_PATTERN, self.verbatimLongitude).group(1).replace(" ",""))
+            SeleniumGeoref.txtT7Long_MinMM.send_keys(re.search(SeleniumGeoref.MIN_PATTERN, self.verbatimLongitude).group(1).replace(" ",""))
             #select index
             if "N" in self.verbatimLatitude.upper():
                 Select(SeleniumGeoref.ChoiceLatDirMM).select_by_index(0)
