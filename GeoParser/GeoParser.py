@@ -612,6 +612,7 @@ class SeleniumGeoref:
         if "TextFieldExtent" in self.dynamicProperties:
             SeleniumGeoref.TextFieldExtent.clear()
             SeleniumGeoref.TextFieldExtent.send_keys(properties["TextFieldExtent"])
+        else: SeleniumGeoref.TextFieldExtent.clear()
         
             
     def verbatim_SRS_reader(self):
@@ -697,8 +698,8 @@ class SeleniumGeoref:
             except: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0)
 
 
-    def coordinates_only(self):
-        Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
+    def georeferencer(self):
+        Select(SeleniumGeoref.ChoiceModel).select_by_index(2)
         if self.CoordSystem == "decimal degrees":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
             #clear fields
