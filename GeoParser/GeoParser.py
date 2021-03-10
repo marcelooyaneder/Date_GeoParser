@@ -592,7 +592,7 @@ class SeleniumGeoref:
         self.verbatimSRS=verbatimSRS
         
     
-    def dynamicpropertiesreader(self):
+    def dynamic_properties_reader(self):
         #{"textFieldMeasurementError": integer, "ChoiceDistUnits": "string", "ChoiceCoordSource": "string", "TextFieldExtent": float}
         if type(literal_eval(self.dynamicProperties)) is dict:
             properties=literal_eval(self.dynamicProperties)
@@ -614,7 +614,7 @@ class SeleniumGeoref:
             SeleniumGeoref.TextFieldExtent.send_keys(properties["TextFieldExtent"])
         
             
-    def verbatimSRSreader(self):
+    def verbatim_SRS_reader(self):
         if self.verbatimSRS in SeleniumGeoref.DATUMS_LIST:
             verbatimSRSIndex=SeleniumGeoref.DATUMS_LIST.index(self.verbatimSRS)
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(verbatimSRSIndex+1)
@@ -624,7 +624,7 @@ class SeleniumGeoref:
             Select(SeleniumGeoref.ChoiceDatum).select_by_index(0)
         
         
-    def precisionselect(self):
+    def precision_select(self):
         if self.CoordSystem == "decimal degrees":
             if isinstance(literal_eval(str(self.verbatimLatitude)), int): Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
             elif abs(float("0."+str(self.verbatimLatitude).split(".")[1]))==0.25: #1/4 degree
@@ -697,7 +697,7 @@ class SeleniumGeoref:
             except: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0)
 
 
-    def coordinatesonly(self):
+    def coordinates_only(self):
         Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
         if self.CoordSystem == "decimal degrees":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
@@ -708,13 +708,13 @@ class SeleniumGeoref:
             SeleniumGeoref.txtT2Dec_Lat.send_keys(str(self.verbatimLatitude))
             SeleniumGeoref.txtT2Dec_Long.send_keys(str(self.verbatimLongitude))
             #Precision check
-            SeleniumGeoref.precisionselect(self)
+            SeleniumGeoref.precision_select(self)
             #check dynamicProperties
-            SeleniumGeoref.dynamicpropertiesreader(self)
+            SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
-            SeleniumGeoref.verbatimSRSreader(self)
+            SeleniumGeoref.verbatim_SRS_reader(self)
             #results
-            SeleniumGeoref.getresults(self)
+            SeleniumGeoref.get_results(self)
             
         elif self.CoordSystem == "degrees minutes seconds":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
@@ -740,13 +740,13 @@ class SeleniumGeoref:
                 Select(SeleniumGeoref.ChoiceLongDirDMS).select_by_index(0)
             else: Select(SeleniumGeoref.ChoiceLongDirDMS).select_by_index(1)
             #Precision check
-            SeleniumGeoref.precisionselect(self) 
+            SeleniumGeoref.precision_select(self) 
             #check dynamicProperties
-            SeleniumGeoref.dynamicpropertiesreader(self)
+            SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
-            SeleniumGeoref.verbatimSRSreader(self)
+            SeleniumGeoref.verbatim_SRS_reader(self)
             #results
-            SeleniumGeoref.getresults(self)
+            SeleniumGeoref.get_results(self)
             
         elif self.CoordSystem == "degrees decimal minutes":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
@@ -768,15 +768,15 @@ class SeleniumGeoref:
                 Select(SeleniumGeoref.ChoiceLongDirMM).select_by_index(0)
             else: Select(SeleniumGeoref.ChoiceLongDirMM).select_by_index(1)
             #Precision Check 
-            SeleniumGeoref.precisionselect(self)
+            SeleniumGeoref.precision_select(self)
             #check dynamicProperties
-            SeleniumGeoref.dynamicpropertiesreader(self)
+            SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
-            SeleniumGeoref.verbatimSRSreader(self)
+            SeleniumGeoref.verbatim_SRS_reader(self)
             #results
-            SeleniumGeoref.getresults(self)
+            SeleniumGeoref.get_results(self)
     
-    def getresults(self):
+    def get_results(self):
         SeleniumGeoref.ButtonCalculate.click()
         resultDict={}
         resultDict["decimalLatitude"]=SeleniumGeoref.TextFieldCalcDecLat.text
@@ -787,17 +787,17 @@ class SeleniumGeoref:
         resultDict["georeferencerDate"]=SeleniumGeoref.TextFieldCalcDate.text
         print(resultDict)
     
-    def geographicfeature(self):
+    def geographic_feature(self):
         Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
         Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(0)
 
 
 
-class db_prep:
+class DBPrep:
     def __init__(self,data):
         self.data=data
     
-    def verbatimCoordinates_dms_sep(self,index):
+    def verbatim_coordinates_dms_sep(self,index):
         """
         split verbatimCoordinates data and fill verbatimLatitude & verbatimLongitude
         """
@@ -812,7 +812,7 @@ class db_prep:
                 self.data.loc[index,"verbatimLongitude"]=Coordinate
 
     
-    def verbatimCoordinates_utm_sep(self,index):
+    def verbatim_coordinates_utm_sep(self,index):
         Coordinate= self.data.loc[index,"verbatimCoordinates"].split(" ")
         for elements in Coordinate:
             if "N" or "S" in elements.upper(): timezone_index=Coordinate.index(elements)
@@ -825,7 +825,7 @@ class db_prep:
             self.data.loc[index,"verbatimLatitude"]=Coordinate[0]
             self.data.loc[index,"verbatimLongitude"]=Coordinate[1]
     
-    def verb_lat_long_autocomplete(self):
+    def verbatim_latitude_longitude_autocomplete(self):
         """
         check existence of verbatimLatitude & verbatimLongitude:
             -Exist: fill verbatimLatitude & verbatimLongitude from verbatimCoordinates data
@@ -841,9 +841,9 @@ class db_prep:
                 elif isinstance(self.data.loc[index,"verbatimLongitude"],str)==False and isinstance(self.data.loc[index,"verbatimLatitude"],str)==False:  #cambio
                     if (pd.isna(self.data.loc[index,"verbatimLongitude"])) or (pd.isna(self.data.loc[index,"verbatimLatitude"])): #cambio
                         if self.data.loc[index,"verbatimCoordinateSystem"]=="UTM":
-                            db_prep.verbatimCoordinates_utm_sep(self,index)
+                            DBPrep.verbatim_coordinates_utm_sep(self,index)
                         elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds" or self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes":
-                            db_prep.verbatimCoordinates_dms_sep(self,index)
+                            DBPrep.verbatim_coordinates_dms_sep(self,index)
                         else:
                             pass                    
         if set(['verbatimLatitude', 'verbatimLongitude']).issubset(set(self.data.columns.to_list())) is True:
@@ -853,13 +853,13 @@ class db_prep:
                 elif isinstance(self.data.loc[index,"verbatimLongitude"],str)==False and isinstance(self.data.loc[index,"verbatimLatitude"],str)==False:  #cambio
                     if (pd.isna(self.data.loc[index,"verbatimLongitude"])) or (pd.isna(self.data.loc[index,"verbatimLatitude"])): #cambio
                         if self.data.loc[index,"verbatimCoordinateSystem"]=="UTM":
-                            self.verbatimCoordinates_utm_sep(index)
+                            self.verbatim_coordinates_utm_sep(index)
                         elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds" or self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes":
-                            self.verbatimCoordinates_dms_sep(index)
+                            self.verbatim_coordinates_dms_sep(index)
                         else:
                             pass
                      
-    def verbatimCoordinates_autocomplete(self):
+    def verbatim_coordinates_autocomplete(self):
         """
         Check the existence of verbatimCoordinates:
             - Exist: check if verbatimLatitude & verbatimLongitude exist and then fill verbatimCoordinates
@@ -881,7 +881,7 @@ class db_prep:
                         self.data.loc[index,"verbatimCoordinates"]=f"{lat}, {lon}"
                     else: pass
                       
-    def verbatimCoordinateSystem_autocomplete(self): #work in progress
+    def verbatim_coordinate_system_autocomplete(self): #work in progress
         """
         fill verbatimCoordinateSystem field based on verbatimCoordinates data
         """
@@ -901,7 +901,7 @@ class db_prep:
                         self.data.loc[index,"verbatimCoordinateSystem"]="UTM"
                 except: pass
     
-    def coordinatePrecision_autocomplete(self):
+    def coordinate_precision_autocomplete(self):
         """
         fill coordinatePrecision based on verbatimLatitude & verbatimLongitude (preference) else decimalLatitude & decimalLongitude information
         """
@@ -959,7 +959,7 @@ class db_prep:
                 except: pass
         
    
-class coord_transform:
+class CoordTransform:
     def __init__(self,data):
         self.data=data
     
@@ -1001,7 +1001,7 @@ class coord_transform:
                     self.data.loc[index,"decimalLatitude"]="Error"
                     self.data.loc[index,"decimalLongitude"]="Error"
     
-    def geodeticDatum_autocomplete(self): 
+    def geodetic_datum_autocomplete(self): 
         """
         fill geodeticDatum based on info from verbatimSRS 
         if decimalLatitude or decimalLongitude doesnt exist value is na 
@@ -1057,7 +1057,7 @@ class coord_transform:
             except: 
                 pass
         
-    def higherGeography_autocomplete(self): 
+    def higher_geography_autocomplete(self): 
         """
         fill higherGeography 
         """
