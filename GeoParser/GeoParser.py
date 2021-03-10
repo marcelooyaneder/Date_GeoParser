@@ -4,6 +4,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from ast import literal_eval
 import math
+import utm
+import requests
+import json
+import pandas as pd
+import numpy as np
+
+
 driver = webdriver.Chrome(executable_path=r'C:\Users\marcelo\Documents\chromedriver_win32\chromedriver.exe')
 driver.get("https://georeferencing.org/georefcalculator/gci3/source/gci3.html")
 
@@ -783,3 +790,299 @@ class SeleniumGeoref:
     def geographicfeature(self):
         Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
         Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(0)
+
+
+
+class db_prep:
+    def __init__(self,data):
+        self.data=data
+    
+    def verbatimCoordinates_dms_sep(self,index):
+        """
+        split verbatimCoordinates data and fill verbatimLatitude & verbatimLongitude
+        """
+        for Coordinate in self.data.loc[index,"verbatimCoordinates"].split(","):
+            if "N" in Coordinate.upper(): 
+                self.data.loc[index,"verbatimLatitude"]=Coordinate
+            elif "S" in Coordinate.upper(): 
+                self.data.loc[index,"verbatimLatitude"]=Coordinate
+            elif "E" in Coordinate.upper(): 
+                self.data.loc[index,"verbatimLongitude"]=Coordinate
+            elif "W" or "O" in Coordinate.upper(): 
+                self.data.loc[index,"verbatimLongitude"]=Coordinate
+
+    
+    def verbatimCoordinates_utm_sep(self,index):
+        Coordinate= self.data.loc[index,"verbatimCoordinates"].split(" ")
+        for elements in Coordinate:
+            if "N" or "S" in elements.upper(): timezone_index=Coordinate.index(elements)
+        Coordinate_indexes=list(range(0,len(Coordinate)))
+        Coordinate_indexes.remove(timezone_index)
+        if int(Coordinate[Coordinate_indexes[0]]) > int(Coordinate[Coordinate_indexes[1]]):
+            self.data.loc[index,"verbatimLatitude"]=Coordinate[Coordinate_indexes[1]]
+            self.data.loc[index,"verbatimLongitude"]=Coordinate[Coordinate_indexes[0]]
+        else:
+            self.data.loc[index,"verbatimLatitude"]=Coordinate[0]
+            self.data.loc[index,"verbatimLongitude"]=Coordinate[1]
+    
+    def verb_lat_long_autocomplete(self):
+        """
+        check existence of verbatimLatitude & verbatimLongitude:
+            -Exist: fill verbatimLatitude & verbatimLongitude from verbatimCoordinates data
+            -Absence: create and fill verbatimLatitude & verbatimLongitude from verbatimCoordinates data
+        """
+        if set(['verbatimLatitude', 'verbatimLongitude']).issubset(set(self.data.columns.to_list())) is False:
+            verb_coord_position=self.data.columns.to_list().index("verbatimCoordinates")+1
+            self.data.insert(verb_coord_position,"verbatimLatitude",np.nan)
+            self.data.insert(verb_coord_position+1,"verbatimLongitude",np.nan)
+            for index in self.data.index:
+                if pd.isna(self.data.loc[index,"verbatimCoordinates"]):
+                    pass
+                elif isinstance(self.data.loc[index,"verbatimLongitude"],str)==False and isinstance(self.data.loc[index,"verbatimLatitude"],str)==False:  #cambio
+                    if (pd.isna(self.data.loc[index,"verbatimLongitude"])) or (pd.isna(self.data.loc[index,"verbatimLatitude"])): #cambio
+                        if self.data.loc[index,"verbatimCoordinateSystem"]=="UTM":
+                            db_prep.verbatimCoordinates_utm_sep(self,index)
+                        elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds" or self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes":
+                            db_prep.verbatimCoordinates_dms_sep(self,index)
+                        else:
+                            pass                    
+        if set(['verbatimLatitude', 'verbatimLongitude']).issubset(set(self.data.columns.to_list())) is True:
+            for index in self.data.index:
+                if pd.isna(self.data.loc[index,"verbatimCoordinates"]):
+                    pass
+                elif isinstance(self.data.loc[index,"verbatimLongitude"],str)==False and isinstance(self.data.loc[index,"verbatimLatitude"],str)==False:  #cambio
+                    if (pd.isna(self.data.loc[index,"verbatimLongitude"])) or (pd.isna(self.data.loc[index,"verbatimLatitude"])): #cambio
+                        if self.data.loc[index,"verbatimCoordinateSystem"]=="UTM":
+                            self.verbatimCoordinates_utm_sep(index)
+                        elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds" or self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes":
+                            self.verbatimCoordinates_dms_sep(index)
+                        else:
+                            pass
+                     
+    def verbatimCoordinates_autocomplete(self):
+        """
+        Check the existence of verbatimCoordinates:
+            - Exist: check if verbatimLatitude & verbatimLongitude exist and then fill verbatimCoordinates
+            - Absence: create verbatimCoordinates then check if verbatimLatitude & verbatimLongitude exist and then fill verbatimCoordinates
+        """
+        if "verbatimCoordinates" not in self.data.columns:
+            if "verbatimLatitude" and "verbatimLongitude" in self.data.columns:
+                self.data["verbatimCoordinates"]=np.nan
+                for index in self.data.index:
+                    if (pd.isna(self.data.loc[index,"verbatimLatitude"]),pd.isna(self.data.loc[index,"verbatimLongitude"])) == (False,False) :
+                        lat,lon=self.data.loc[index,"verbatimLatitude"],self.data.loc[index,"verbatimLongitude"]
+                        self.data.loc[index,"verbatimCoordinates"]=f"{lat}, {lon}"
+                    else :pass 
+        if "verbatimCoordinates" in self.data.columns:
+            for index in self.data.index:
+                if pd.isna(self.data.loc[index,"verbatimCoordinates"]):
+                    if (pd.isna(self.data.loc[index,"verbatimLatitude"]),pd.isna(self.data.loc[index,"verbatimLongitude"])) == (False,False):
+                        lat,lon=self.data.loc[index,"verbatimLatitude"],self.data.loc[index,"verbatimLongitude"]
+                        self.data.loc[index,"verbatimCoordinates"]=f"{lat}, {lon}"
+                    else: pass
+                      
+    def verbatimCoordinateSystem_autocomplete(self): #work in progress
+        """
+        fill verbatimCoordinateSystem field based on verbatimCoordinates data
+        """
+        minutes="'"
+        seconds='"'
+        for index in self.data.index:
+            if pd.isna(self.data.loc[index,"verbatimCoordinates"]) is False:
+                try:
+                    if "°" or "d" in self.data.loc[index,"verbatimCoordinates"]: 
+                        if minutes and seconds in self.data.loc[index,"verbatimCoordinates"]: 
+                            self.data.loc[index,"verbatimCoordinateSystem"]="degrees minutes seconds"
+                        elif minutes in self.data.loc[index,"verbatimCoordinates"]: 
+                            self.data.loc[index,"verbatimCoordinateSystem"]="degrees decimal minutes"
+                    elif "." in self.data.loc[index,"verbatimCoordinates"]: 
+                        self.data.loc[index,"verbatimCoordinateSystem"]="decimal degrees"
+                    else: 
+                        self.data.loc[index,"verbatimCoordinateSystem"]="UTM"
+                except: pass
+    
+    def coordinatePrecision_autocomplete(self):
+        """
+        fill coordinatePrecision based on verbatimLatitude & verbatimLongitude (preference) else decimalLatitude & decimalLongitude information
+        """
+        for index in self.data.index:
+            if (self.data.loc[index,"verbatimLatitude"] or self.data.loc[index,"verbatiLongitude"]) is np.nan or self.data.loc[index,"verbatimCoordinateSystem"]=="decimal degrees":
+                if (self.data.loc[index,"decimalLatitude"] or self.data.loc[index,"decimalLongitude"]) is not np.nan:
+                    try:
+                        lat=self.data.loc[index,"decimalLatitude"].split(".")
+                        lon=self.data.loc[index,"decimalLongitude"].split(".")
+                        self.data.loc[index,"coordinatePrecision"]="0."+"0"*(min(len(lat[1]),len(lon[1]))-1)+"1"
+                    except: pass
+            elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds":
+                try:
+                    lat=self.data.loc[index,"verbatimLatitude"]
+                    lon=self.data.loc[index,"verbatimLongitude"]
+                    srch="'(.+?)\""
+                    m_lat=re.search(srch, lat)
+                    m_lon=re.search(srch, lon)
+                    found_lat=m_lat.group(1)
+                    found_lon=m_lon.group(1)
+                    if "." in found_lat: 
+                        pres=1/pow(10,len(found_lat.split(".")[1]))
+                        coordP_lat=pres/3600.
+                    else: coordP_lat=1/3600.
+                    if "." in found_lon:
+                        pres=1/pow(10,len(found_lon.split(".")[1]))
+                        coordP_lon=pres/3600.
+                    else: coordP_lon=1/3600.
+                    self.data.loc[index,"coordinatePrecision"]='{:.7f}'.format(min(coordP_lon,coordP_lat))
+                except: pass
+            elif self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes":
+                try:
+                    lat=self.data.loc[index,"verbatimLatitude"]
+                    lon=self.data.loc[index,"verbatimLongitude"]
+                    srch="°(.+?)\'"
+                    m_lat=re.search(srch, lat)
+                    m_lon=re.search(srch, lon)
+                    found_lat=m_lat.group(1)
+                    found_lon=m_lon.group(1)
+                    if "." in found_lat: 
+                        pres=1/pow(10,len(found_lat.split(".")[1]))
+                        coordP_lat=pres/60.
+                    else: coordP_lat=1/60.
+                    if "." in found_lon:
+                        pres=1/pow(10,len(found_lon.split(".")[1]))
+                        coordP_lon=pres/60.
+                    else: coordP_lon=1/60.
+                    self.data.loc[index,"coordinatePrecision"]='{:.7f}'.format(min(coordP_lon,coordP_lat))
+                except: pass
+            else: 
+                try:
+                    lat=self.data.loc[index,"decimalLatitude"].split(".")
+                    lon=self.data.loc[index,"decimalLongitude"].split(".")
+                    self.data.loc[index,"coordinatePrecision"]="0."+"0"*(min(len(lat[1]),len(lon[1]))-1)+"1"
+                except: pass
+        
+   
+class coord_transform:
+    def __init__(self,data):
+        self.data=data
+    
+    def utm_to_dg(self):
+        for index in self.data.index:
+            if self.data.loc[index,"verbatimCoordinates"] is not np.nan and self.data.loc[index,"verbatimCoordinateSystem"]=="UTM":
+                coordinate= self.data.loc[index,"verbatimCoordinates"].split(" ")
+                for elements in coordinate:
+                    if "N" in elements.upper(): 
+                        zone_index=coordinate.index(elements)
+                        Global="North"
+                    elif "S" in elements.upper():
+                        zone_index=coordinate.index(elements)
+                        Global="South"
+                if Global=="South":
+                    lat,lon=utm.to_latlon(self.data.loc[index,"verbatimLatitude"], self.data.loc[index,"verbatimLongitude"], int(coordinate[zone_index].upper().replace("S","")), northern=False)
+                elif Global=="North":
+                    lat,lon=utm.to_latlon(self.data.loc[index,"verbatimLatitude"], self.data.loc[index,"verbatimLongitude"], int(coordinate[zone_index].upper().replace("N","")), northern=True)
+                self.data.loc[index,"decimalLatitude"]="{0:.7f}".format(lat)
+                self.data.loc[index,"decimalLongitude"]="{0:.7f}".format(lon)
+                #self.data.loc[index,"georeferenceSources"]="GeoParser Marcelo Oyaneder"
+    
+    def dms_to_dg(self):
+        """
+        fill decimalLatitude & decimalLongitude based on verbatimLatitude & verbatimLongitude transformation
+        fill geodeticDatum based on verbatimSRS info
+        """
+        for index in self.data.index:
+            if (self.data.loc[index,"verbatimCoordinateSystem"]=="degrees minutes seconds" or self.data.loc[index,"verbatimCoordinateSystem"]=="degrees decimal minutes") and pd.isna(self.data.loc[index,"verbatimCoordinates"]) is False:
+                try: 
+                    location= self.data.loc[index,"verbatimCoordinates"]
+                    if "O" in location.upper():
+                        location=location.replace("O","W")
+                    response=requests.get(f"http://data.canadensys.net/tools/coordinates.json?data=35|{location}&idprovided=TRUE").json()
+                    lon,lat=response["features"][0]["geometry"]["coordinates"]
+                    self.data.loc[index,"decimalLatitude"]="{0:.7f}".format(lat)
+                    self.data.loc[index,"decimalLongitude"]="{0:.7f}".format(lon)
+                except:
+                    self.data.loc[index,"decimalLatitude"]="Error"
+                    self.data.loc[index,"decimalLongitude"]="Error"
+    
+    def geodeticDatum_autocomplete(self): 
+        """
+        fill geodeticDatum based on info from verbatimSRS 
+        if decimalLatitude or decimalLongitude doesnt exist value is na 
+        """
+        for index in self.data.index:
+            if (pd.isna(self.data.loc[index,"decimalLatitude"]) is False) and (pd.isna(self.data.loc[index,"decimalLongitude"]) is False):
+                if pd.isna(self.data.loc[index,"geodeticDatum"]):
+                    if pd.isna(self.data.loc[index,"verbatimSRS"]):
+                        self.data.loc[index,"geodeticDatum"]="unknown"
+                    else:
+                        self.data.loc[index,"geodeticDatum"]=self.data.loc[index,"verbatimSRS"]
+                else: pass
+    
+    def continent_autocomplete(self):
+        """
+        fill continent based on country data
+        """
+        country_data=pd.read_csv("https://raw.githubusercontent.com/VertNet/DwCVocabs/master/vocabs/countryCode_country_continent_merged.csv")
+        country_data.set_index("country",inplace=True)
+        country_data_dict=country_data.to_dict()
+        if set(['country']).issubset(set(self.data.columns.to_list())) is True:
+            if set(['continent']).issubset(set(self.data.columns.to_list())) is True:
+                for index in self.data.index:
+                    if self.data.loc[index,"country"] in country_data_dict["continent"].keys() and pd.isna(self.data.loc[index,"continent"]):
+                        self.data.loc[index,"continent"]=country_data_dict["continent"][self.data.loc[index,"country"]]
+                    else: pass        
+            elif set(['continent']).issubset(set(self.data.columns.to_list())) is False:
+                self.data.insert(self.data.columns.to_list().index("country")-1,"continent",np.nan) #en que lugar lo coloco
+                for index in self.data.index:
+                    if self.data.loc[index,"country"] in country_data_dict["continent"].keys():
+                        self.data.loc[index,"continent"]=country_data_dict["continent"][self.data.loc[index,"country"]]
+                    else: pass  
+        else: pass 
+    
+    def location_autocomplete(self): #include country, country_code, stateProvince, county, municipality 
+        """
+        fill country, countryCode, stateProvince, county, municipality based on lat,lon info using gbif API 
+        lacking develop about marine regions         
+        """
+        for index in self.data.index:
+            try:
+                lat=self.data.loc[index,"decimalLatitude"]
+                lon=self.data.loc[index,"decimalLongitude"]
+                result=requests.get(f"https://api.gbif-uat.org/v1/geocode/reverse?lat={lat}&lng={lon}").json()
+                for elements in result:
+                    if elements["source"]=="http://gadm.org/":
+                        if elements["type"]=="GADM0":
+                            self.data.loc[index,"country"]=elements["title"]
+                            self.data.loc[index,"countryCode"]=elements["isoCountryCode2Digit"]
+                        elif elements["type"]=="GADM1": self.data.loc[index,"stateProvince"]=elements["title"]
+                        elif elements["type"]=="GADM2": self.data.loc[index,"county"]=elements["title"]
+                        elif elements["type"]=="GADM3": self.data.loc[index,"municipality"]=elements["title"]
+            except: 
+                pass
+        
+    def higherGeography_autocomplete(self): 
+        """
+        fill higherGeography 
+        """
+        dwc_labels=["continent","waterBody","country","countryCode","stateProvince","county","municipality","islandGroup","island"]
+        dwc_labels_selected=[i for i in dwc_labels if i in self.data.columns]
+        try:
+            for index in self.data.index:
+                higherGeography_list=[]
+                if pd.isna(self.data.loc[index,"higherGeography"]) is True:
+                    for elements in dwc_labels_selected:
+                        if isinstance(self.data.loc[index,elements], str): higherGeography_list.append(self.data.loc[index,elements])
+                higherGeography_str=" | ".join(higherGeography_list)
+                if higherGeography_str=="":
+                    self.data.loc[index,"higherGeography"]=np.nan
+                else:
+                    self.data.loc[index,"higherGeography"]=higherGeography_str         
+        except KeyError:
+            self.data["higherGeography"]=np.nan
+            for index in self.data.index:
+                higherGeography_list=[]
+                if pd.isna(self.data.loc[index,"higherGeography"]) is True:
+                    for elements in dwc_labels_selected:
+                        if isinstance(self.data.loc[index,elements], str): higherGeography_list.append(self.data.loc[index,elements])
+                higherGeography_str=" | ".join(higherGeography_list)
+                if higherGeography_str == "":
+                    self.data.loc[index,"higherGeography"]=np.nan
+                else:
+                    self.data.loc[index,"higherGeography"]=higherGeography_str      
