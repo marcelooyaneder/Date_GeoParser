@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 
-driver = webdriver.Chrome(executable_path=r'C:\Users\marcelo\Documents\chromedriver_win32\chromedriver.exe')
+driver = webdriver.Chrome(executable_path=r'C:\Users\oyane\OneDrive\Documentos\chromedriver_win32\chromedriver.exe')
 driver.get("https://georeferencing.org/georefcalculator/gci3/source/gci3.html")
 
 
