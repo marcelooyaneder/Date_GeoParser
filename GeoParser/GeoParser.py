@@ -601,7 +601,7 @@ class SeleniumGeoref:
                 if "geoParser" in elements:
                     properties=elements
         SeleniumGeoref.textFieldMeasurementError.clear()
-        SeleniumGeoref.textFieldMeasurementError.send_keys(properties["textFieldMeasurementError"])
+        SeleniumGeoref.textFieldMeasurementError.send_keys(str(properties["textFieldMeasurementError"]))
         ChoiceDistUnitsIndex=SeleniumGeoref.DistUnits[properties["ChoiceDistUnits"]]
         Select(SeleniumGeoref.ChoiceDistUnits).select_by_index(ChoiceDistUnitsIndex)
         if properties["ChoiceCoordSource"] in SeleniumGeoref.COORDINATE_SOURCE:
@@ -611,7 +611,7 @@ class SeleniumGeoref:
             Select(SeleniumGeoref.ChoiceCoordSource).select_by_index(4)
         if "TextFieldExtent" in self.dynamicProperties:
             SeleniumGeoref.TextFieldExtent.clear()
-            SeleniumGeoref.TextFieldExtent.send_keys(properties["TextFieldExtent"])
+            SeleniumGeoref.TextFieldExtent.send_keys(str(properties["TextFieldExtent"]))
         else: SeleniumGeoref.TextFieldExtent.clear()
         
             
@@ -633,7 +633,7 @@ class SeleniumGeoref:
             elif abs(float("0."+str(self.verbatimLatitude).split(".")[1]))==0.5: #1/2 degree
                 Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(6)
             elif pow(10,-len(str(self.verbatimLatitude).split(".")[1])) in SeleniumGeoref.PRECISION_DD:
-                Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DD[pow(10,-len(self.verbatimLatitude.split(".")[1]))])
+                Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DD[pow(10,-len(str(self.verbatimLatitude).split(".")[1]))])
             else:
                 Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(8) #0.0000001 or more
         if self.CoordSystem == "degrees decimal minutes":
@@ -714,8 +714,6 @@ class SeleniumGeoref:
             SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
             SeleniumGeoref.verbatim_SRS_reader(self)
-            #results
-            SeleniumGeoref.get_results(self)
             
         elif self.CoordSystem == "degrees minutes seconds":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
@@ -746,8 +744,6 @@ class SeleniumGeoref:
             SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
             SeleniumGeoref.verbatim_SRS_reader(self)
-            #results
-            SeleniumGeoref.get_results(self)
             
         elif self.CoordSystem == "degrees decimal minutes":
             Select(SeleniumGeoref.ChoiceCoordSystem).select_by_index(SeleniumGeoref.COORD_SYSTEM_DIC[self.CoordSystem])
@@ -774,8 +770,6 @@ class SeleniumGeoref:
             SeleniumGeoref.dynamic_properties_reader(self)
             #check Datum
             SeleniumGeoref.verbatim_SRS_reader(self)
-            #results
-            SeleniumGeoref.get_results(self)
     
     def get_results(self):
         SeleniumGeoref.ButtonCalculate.click()
@@ -785,8 +779,9 @@ class SeleniumGeoref:
         resultDict["coordinateUncertaintyInMeters"]=SeleniumGeoref.TextFieldCalcErrorDist.text
         resultDict["geodeticDatum"]=SeleniumGeoref.TextFieldCalcDatum.text
         resultDict["coordinatePrecision"]=SeleniumGeoref.TextFieldCalcPrecision.text
-        resultDict["georeferencerDate"]=SeleniumGeoref.TextFieldCalcDate.text
-        print(resultDict)
+        resultDict["georeferencedDate"]=SeleniumGeoref.TextFieldCalcDate.text
+        resultDict["georeferenceProtocol "]="Georeferencing Quick Reference Guide (Zermoglio et al. 2020, https://doi.org/10.35035/e09p-h128)"
+        return resultDict
     
     def geographic_feature(self):
         Select(SeleniumGeoref.ChoiceModel).select_by_index(1)
