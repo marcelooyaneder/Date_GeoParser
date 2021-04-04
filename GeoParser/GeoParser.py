@@ -1082,3 +1082,61 @@ class CoordTransform:
                     self.data.loc[index,"higherGeography"]=np.nan
                 else:
                     self.data.loc[index,"higherGeography"]=higherGeography_str      
+    
+    def elevation_autocomplete(self):
+        """
+        porpouse: fill maximumElevationInMeters and minimumElevationInMeters based on decimalLatitude and decimalLongitude (datum WGS84)
+        first check the presence of minimumElevationInMeters & maximumElevationInMeters field on the database.
+        fill empty minimumElevationInMeters & maximumElevationInMeters based on coordinates
+        fill minimumElevationInMeters & maximumElevationInMeters based on verbatimElevation (need development based on string recognition)
+        work based on (SIB-Colombia): https://github.com/SIB-Colombia/data-quality-open-refine/blob/master/ValElevationAPIGeoNames_ValElevacionAPIGeoNames.txt
+        """
+        if "minimumElevationInMeters" or "maximumElevationInMeters" not in self.data.columns:
+            if "minimumElevationInMeters" not in self.data.columns:
+                self.data["minimumElevationInMeters"]=np.nan
+            if "maximumElevationInMeters" not in self.data.columns:
+                self.data["maximumElevationInMeters"]=np.nan
+        else: pass
+        index_list=self.data.query('minimumElevationInMeters.isnull() and maximumElevationInMeters.isnull() and decimalLatitude.notnull() and decimalLongitude.notnull()').index.tolist()
+        for index in index_list:
+            decimalLatitude=self.data.loc[index,"decimalLatitude"]
+            decimalLongitude=self.data.loc[index,"decimalLongitude"]
+            geonames_ans=requests.get(f"http://api.geonames.org/srtm1JSON?lat={decimalLatitude}&lng={decimalLongitude}&username=marcelooyaneder").json()
+            elevation=geonames_ans["srtm1"]
+            if isinstance(elevation,str) is False:
+                self.data.loc[index,"maximumElevationInMeters"]=elevation
+                self.data.loc[index,"minimumElevationInMeters"]=elevation
+            else: pass
+        #Elevation validation 
+        """
+        Se crea el elemento *elevationValidation* a partir de las elevación documentada en minimunElevationInMeters y la elevación obtenida a partir del API de Geonames. A partir de la diferencia de las elevaciones se designa un valor booleano:
+        -- 1: La diferencia entre la elevación en *minimumElevationInMeters* y *elevationGeonames* es menor a 100 m.s.n.m.
+        -- 0: La diferencia entre la elevación en *minimumElevationInMeters* y *elevationGeonames* es mayor a 100 m.s.n.m.
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        Si la elevación se encuentra documentanda en rangos (*minimumElevationInMetres* y *maximumElevationInMeters*) se crea un elemento *elevationRangeValidation* que evalua si la elevationGeonames se encuentra entre el rango de elevaciones.
+        -- 1: Se encuentra entre el rango de elevaciones.
+        -- 0: No se encuentra dentro del rango de elevaciones.
+        blank: No hay elevación máxima documentada
+               
+        for index in self.data.query('minimumElevationInMeters.notnull() and decimalLatitude.notnull() and decimalLongitude.notnull()').index.tolist():
+            decimalLatitude=self.data.loc[index,"decimalLatitude"]
+            decimalLongitude=self.data.loc[index,"decimalLongitude"]
+            print(index)
+            geonames_ans=requests.get(f"http://api.geonames.org/srtm1JSON?lat={decimalLatitude}&lng={decimalLongitude}&username=marcelooyaneder").json()
+            elevation=geonames_ans["srtm1"]
+            if isinstance(elevation,int):
+                if (self.data.loc[index,"minimumElevationInMeters"]-elevation)<=100:
+                    self.data.loc[index,"elevationValidation"]=1.0
+                else: self.data.loc[index,"elevationValidation"]=0.0
+        for index in self.data.query('maximumElevationInMeters.notnull() and minimumElevationInMeters.notnull() and decimalLatitude.notnull() and decimalLongitude.notnull()').index.tolist():
+            decimalLatitude=self.data.loc[index,"decimalLatitude"]
+            decimalLongitude=self.data.loc[index,"decimalLongitude"]
+            try:
+                geonames_ans=requests.get(f"http://api.geonames.org/srtm1JSON?lat={decimalLatitude}&lng={decimalLongitude}&username=marcelooyaneder").json()
+                elevation=geonames_ans["srtm1"]
+                if isinstance(elevation,int):
+                    if self.data.loc[index,"minimumElevationInMeters"]<=elevation<=self.data.loc[index,"maximumElevationInMeters"]:
+                        self.data.loc[index,"elevationRangeValidation"]=1.0
+                    else: self.data.loc[index,"elevationRangeValidation"]=0.0
+            except: pass
+        """
