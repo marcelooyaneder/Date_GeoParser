@@ -2,16 +2,17 @@ import re
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
+from webdriver_manager.chrome import ChromeDriverManager
 from ast import literal_eval
 import math
-import utm
+#import utm
 import requests
 import json
 import pandas as pd
 import numpy as np
 
-
-driver = webdriver.Chrome(executable_path=r'C:\Users\oyane\OneDrive\Documentos\chromedriver_win32\chromedriver.exe')
+driver = webdriver.Chrome(ChromeDriverManager().install())
+#driver = webdriver.Chrome(executable_path=r'C:\Users\oyane\OneDrive\Documentos\GitHub\Date_GeoParser\GeoParser\seleniumDriver\chromedriver.exe')
 driver.get("https://georeferencing.org/georefcalculator/gci3/source/gci3.html")
 
 
@@ -689,8 +690,10 @@ class SeleniumGeoref:
                     elif abs(float("0."+degree.split(".")[1]))==0.083: 
                         Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(3)#nearest 5 minutes
                     else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(0) #nearest degree
-                elif float(seconds)!=0 and len(seconds.split(".")[1])>=1:
-                    if len(seconds.split(".")[1])<=2 and pow(10,-len(seconds.split(".")[1])) in SeleniumGeoref.PRECISION_DDM:
+                elif float(seconds)!=0:
+                    if float(seconds).is_integer():
+                        Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(8)
+                    elif len(seconds.split(".")[1])<=2 and pow(10,-len(seconds.split(".")[1])) in SeleniumGeoref.PRECISION_DDM:
                         Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(SeleniumGeoref.PRECISION_DMS[pow(10,-len(seconds.split(".")[1]))])
                     else: Select(SeleniumGeoref.ChoiceLatPrecision).select_by_index(11) #exact
                 elif isinstance(literal_eval(minute), int): #nearest minute
